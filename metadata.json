@@ -1,0 +1,6 @@
+{
+  "name": "Avisena Cup",
+  "description": "Aplikasi turnamen Avisena Cup 26 dengan tampilan layar penuh bersih.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
