@@ -18,18 +18,42 @@ import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.example.R
 import com.example.util.WebAppInterface
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
@@ -274,6 +298,8 @@ fun AppWebView(
 
     var canGoBack by remember { mutableStateOf(false) }
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    var isAppReady by remember { mutableStateOf(false) }
+    var loadProgress by remember { mutableIntStateOf(0) }
 
     val fileChooserLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -285,6 +311,7 @@ fun AppWebView(
 
     val webView = remember {
         WebView(context).apply {
+            setBackgroundColor(android.graphics.Color.parseColor("#0F172A"))
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
@@ -375,8 +402,12 @@ fun AppWebView(
         webView.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView?, newProgress: Int) {
                 super.onProgressChanged(view, newProgress)
+                loadProgress = newProgress
                 if (newProgress > 15) {
                     view?.evaluateJavascript(INJECT_CLEAN_UI_SCRIPT, null)
+                }
+                if (newProgress >= 70 && !isAppReady) {
+                    isAppReady = true
                 }
             }
 
@@ -498,6 +529,7 @@ fun AppWebView(
                 super.onPageFinished(view, url)
                 canGoBack = view?.canGoBack() ?: false
                 view?.evaluateJavascript(INJECT_CLEAN_UI_SCRIPT, null)
+                isAppReady = true
             }
         }
 
@@ -509,10 +541,90 @@ fun AppWebView(
         }
     }
 
-    AndroidView(
-        factory = { webView },
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0F172A))
-    )
+    ) {
+        AndroidView(
+            factory = { webView },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        AnimatedVisibility(
+            visible = !isAppReady,
+            enter = fadeIn(),
+            exit = fadeOut(animationSpec = tween(500))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFF0B1325),
+                                Color(0xFF0F172A),
+                                Color(0xFF070B14)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(32.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.White,
+                        shadowElevation = 10.dp,
+                        modifier = Modifier.size(112.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_app_logo),
+                            contentDescription = "Logo Avisena Cup",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "AVISENA CUP",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Sistem Informasi & Turnamen",
+                        color = Color(0xFF94A3B8),
+                        fontSize = 13.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(36.dp),
+                        color = Color(0xFF38BDF8),
+                        strokeWidth = 3.dp
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = if (loadProgress in 1..99) "Memuat turnamen (${loadProgress}%)..." else "Memuat jadwal & skor...",
+                        color = Color(0xFF64748B),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
 }

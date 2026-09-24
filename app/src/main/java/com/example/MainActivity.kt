@@ -22,7 +22,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MyApplicationTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = androidx.compose.ui.graphics.Color(0xFF0F172A)
+                ) {
                     AppWebView(modifier = Modifier.fillMaxSize())
                 }
             }
